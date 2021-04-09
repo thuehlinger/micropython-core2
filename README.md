@@ -19,7 +19,7 @@ You will need:
 * An Ubuntu linux environment, preferably (I tested on Ubuntu 20.04)
 * A set of development tools on Ubuntu (see below)
 * esp-idf4, patched with files contained in this repo (```source/esp-idf_components```)
-* lv_micropython or micropython, patched with files contained in this repo (```micropython_ports_esp32```)
+* lv_micropython or micropython, patched with files contained in this repo (```micropython_ports```)
 
 ### Install the build environment
 
@@ -43,7 +43,7 @@ Files contained in ```esp-idf_components``` go into ```~/esp-idf/components```.
 
 ### Patch lv_micropython
 
-Files contained in ```micropython_ports_esp32``` go into ```~/lv_micropython/ports/esp32```.
+Files contained in ```micropython_ports/esp32``` go into ```~/lv_micropython/ports/esp32```.
 
 ### Compile lv_micropython
 
