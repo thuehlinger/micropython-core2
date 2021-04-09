@@ -136,9 +136,6 @@ include $(SDKCONFIG)
 
 INC += -I.
 INC += -I$(TOP)
-INC += -I$(TOP)/lib/mp-readline
-INC += -I$(TOP)/lib/netutils
-INC += -I$(TOP)/lib/timeutils
 INC += -I$(BUILD)
 
 INC_ESPCOMP += -I$(ESPCOMP)/bootloader_support/include
@@ -290,7 +287,7 @@ CFLAGS += -DMICROPY_ESP_IDF_4=1
 endif
 
 # this is what ESPIDF uses for c++ compilation
-CXXFLAGS = -std=gnu++11 $(CFLAGS_COMMON) $(INC) $(INC_ESPCOMP)
+CXXFLAGS = -std=gnu++11 $(CFLAGS_COMMON) $(INC) $(INC_ESPCOMP) $(CXXFLAGS_MOD)
 
 LDFLAGS = -nostdlib -Map=$(@:.elf=.map) --cref
 LDFLAGS += --gc-sections -static -EL
@@ -365,7 +362,7 @@ SRC_C = \
 	modnetwork.c \
 	network_lan.c \
 	network_ppp.c \
-	nimble.c \
+	mpnimbleport.c \
 	modsocket.c \
 	modesp.c \
 	esp32_partition.c \
@@ -380,6 +377,9 @@ SRC_C = \
 	machine_sdcard.c \
 	$(wildcard $(BOARD_DIR)/*.c) \
 	$(SRC_MOD)
+
+SRC_CXX += \
+	$(SRC_MOD_CXX)
 
 EXTMOD_SRC_C += $(addprefix extmod/,\
 	modonewire.c \
@@ -408,6 +408,9 @@ $(ESPIDFMOD_MODULE): $(ALL_ESPIDFMOD_SRC) $(LVGL_BINDING_DIR)/gen/gen_mpy.py
 	$(Q)$(CPP) $(ESPIDFMOD_CFLAGS) -DPYCPARSER -I $(LVGL_BINDING_DIR)/pycparser/utils/fake_libc_include $(INC) $(INC_ESPCOMP) $(ESPIDFMOD_SOURCE) > $(ESPIDFMOD_PP)
 	$(Q)$(PYTHON) $(LVGL_BINDING_DIR)/gen/gen_mpy.py -M espidf -E $(ESPIDFMOD_PP) $(ESPIDFMOD_SOURCE) > $@
 
+.PHONY: ESPIDF_MPY
+ESPIDF_MPY: $(ESPIDFMOD_MODULE)
+
 LIB_SRC_C += \
 	lib/lv_bindings/driver/esp32/modlvesp32.c \
 	lib/lv_bindings/driver/esp32/modrtch.c \
@@ -426,6 +429,7 @@ DRIVERS_SRC_C = $(addprefix drivers/,\
 OBJ_MP =
 OBJ_MP += $(PY_O)
 OBJ_MP += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
+OBJ_MP += $(addprefix $(BUILD)/, $(SRC_CXX:.cpp=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(EXTMOD_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(LIB_SRC_C:.c=.o))
 OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
@@ -434,7 +438,7 @@ OBJ_MP += $(addprefix $(BUILD)/, $(DRIVERS_SRC_C:.c=.o))
 $(OBJ_MP): CFLAGS += -Wdouble-promotion -Wfloat-conversion
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
+SRC_QSTR += $(SRC_C) $(SRC_CXX) $(EXTMOD_SRC_C) $(LIB_SRC_C) $(DRIVERS_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
@@ -860,22 +864,6 @@ $(BUILD)/application.elf: $(OBJ) $(LIB) $(BUILD)/esp32_out.ld $(BUILD)/esp32.pro
 	$(ECHO) "LINK $@"
 	$(Q)$(LD) $(LDFLAGS) -o $@ $(APP_LD_ARGS)
 	$(Q)$(SIZE) $@
-
-define compile_cxx
-$(ECHO) "CXX $<"
-$(Q)$(CXX) $(CXXFLAGS) -c -MD -o $@ $<
-@# The following fixes the dependency file.
-@# See http://make.paulandlesley.org/autodep.html for details.
-@# Regex adjusted from the above to play better with Windows paths, etc.
-@$(CP) $(@:.o=.d) $(@:.o=.P); \
-  $(SED) -e 's/#.*//' -e 's/^.*:  *//' -e 's/ *\\$$//' \
-      -e '/^$$/ d' -e 's/$$/ :/' < $(@:.o=.d) >> $(@:.o=.P); \
-  $(RM) -f $(@:.o=.d)
-endef
-
-vpath %.cpp . $(TOP)
-$(BUILD)/%.o: %.cpp
-	$(call compile_cxx)
 
 ################################################################################
 # Declarations to build the bootloader
