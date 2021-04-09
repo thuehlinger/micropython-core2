@@ -15,6 +15,8 @@ For a demo of the firmware, transfer ```main_test.py``` to the Core2 using ```am
 
 ## Setup for compilation of the custom firware
 
+This is only necessary if you want to build the firmware for yourself, for example in case you want to upgrade to a more recent micropython firmware.
+
 You will need:
 * An Ubuntu linux environment, preferably (I tested on Ubuntu 20.04)
 * A set of development tools on Ubuntu (see below)
